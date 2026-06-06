@@ -1,17 +1,16 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SaldoTarjeta</title>
+  <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#185FA5">
+  <meta name="theme-color" content="#f5deb3">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="SaldoTarjeta">
-  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
@@ -20,6 +19,9 @@
     <div class="header">
       <h1><i class="ti ti-credit-card" aria-hidden="true"></i> Control de tarjeta</h1>
       <span class="sub" id="hdr-sub"></span>
+      <button class="btn btn-sm" onclick="window.close()" style="margin-left:auto;border-color:#ccc">
+          ✕ Salir
+      </button>
     </div>
     
     <div class="metrics">
@@ -195,6 +197,14 @@
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js");
   }
+  // mostrarDiagnostico muestra el box al hacer click
+  const _origDiag = window.mostrarDiagnostico;
+  document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.querySelector("[onclick='mostrarDiagnostico()']");
+    if (btn) btn.addEventListener("click", () => {
+      document.getElementById("diag-output").style.display = "block";
+    });
+  });
 </script>
 </html>
 
