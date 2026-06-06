@@ -1,0 +1,200 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SaldoTarjeta</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#185FA5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="SaldoTarjeta">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <div id="toast" class="toast"></div>
+    
+    <div class="header">
+      <h1><i class="ti ti-credit-card" aria-hidden="true"></i> Control de tarjeta</h1>
+      <span class="sub" id="hdr-sub"></span>
+    </div>
+    
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Saldo usado</div><div class="metric-value danger" id="m-usado">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Disponible</div><div class="metric-value success" id="m-disp">—</div></div>
+      <div class="metric"><div class="metric-label">Días para pago</div><div class="metric-value warn" id="m-dias">—</div></div>
+    </div>
+    
+    <div id="limit-bar-section" style="margin-bottom:1rem;display:none">
+      <div class="bar-bg"><div class="bar-fill" id="limit-bar" style="width:0%"></div></div>
+      <span class="pct-label" id="pct-label"></span>
+    </div>
+    
+    <div id="alerts-zone"></div>
+    
+    <div class="dates-row">
+      <div class="date-card">
+        <div class="date-card-label"><i class="ti ti-scissors" style="font-size:13px" aria-hidden="true"></i> Fecha de corte</div>
+        <div class="date-card-value" id="dc-corte">—</div>
+        <div class="date-card-note" id="dc-corte-note"></div>
+      </div>
+      <div class="date-card">
+        <div class="date-card-label"><i class="ti ti-calendar-due" style="font-size:13px" aria-hidden="true"></i> Fecha límite de pago</div>
+        <div class="date-card-value" id="dc-pago">—</div>
+        <div class="date-card-note" id="dc-pago-note"></div>
+      </div>
+    </div>
+    
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('gastos')"><i class="ti ti-plus" aria-hidden="true"></i> Gastos</button>
+      <button class="tab active" onclick="switchTab('pagos')"><i class="ti ti-plus" aria-hidden="true"></i> Pagos</button>
+      <button class="tab" onclick="switchTab('historial')"><i class="ti ti-list" aria-hidden="true"></i> Corte actual</button>
+      <button class="tab" onclick="switchTab('cortes')"><i class="ti ti-history" aria-hidden="true"></i> Historial</button>
+      <button class="tab" onclick="switchTab('config')"><i class="ti ti-settings" aria-hidden="true"></i> Configuración</button>
+    </div>
+    
+    <div class="tab-panel active" id="tab-gastos">
+      <div class="card">
+        <div class="card-title">
+          <i class="ti ti-shopping-cart" aria-hidden="true"></i> Nuevo gasto
+        </div>
+        <div class="fr">
+          <div class="fg" style="flex:2">
+            <label>Concepto</label>
+               <input type="text" id="inp-concepto" placeholder="Ej. Supermercado, Netflix...">
+          </div>
+          
+          <div class="fg" style="flex:1">
+             <label>Cantidad ($)</label><input type="number" id="inp-cantidad" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <button class="btn btn-primary" onclick="agregarGasto()">
+            <i class="ti ti-plus" aria-hidden="true"></i> Agregar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-pagos">
+      <div class="card success-border">
+        
+        <div class="card-title">
+          <i class="ti ti-receipt" aria-hidden="true"> </i> Registrar pago
+        </div>
+        <div class="fr">
+          <div class="fg"><label>Monto del pago ($)</label>
+            <input type="number" id="inp-pago" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <button class="btn btn-success" onclick="registrarPago()">
+            <i class="ti ti-check" aria-hidden="true"> </i> 
+            Pagar
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="tab-panel" id="tab-historial">
+      <div class="section-hd">
+        <span class="section-title"><i class="ti ti-list" aria-hidden="true"></i> Movimientos <span class="badge badge-info" id="txn-count">0</span></span>
+        <button class="btn btn-sm" onclick="cerrarCorte()"><i class="ti ti-scissors" aria-hidden="true"></i> Cerrar corte</button>
+      </div>
+      <div id="txn-list"><div class="empty">Sin movimientos en este corte</div></div>
+      <div id="corte-subtotal" style="display:none;text-align:right;font-size:13px;color:var(--color-text-secondary);padding-bottom:1rem">
+        Total corte: <strong id="corte-total-val" style="color:var(--color-text-danger)"></strong>
+      </div>
+    </div>
+    
+    <div class="tab-panel" id="tab-cortes">
+      <div class="section-hd">
+        <span class="section-title"><i class="ti ti-history" aria-hidden="true"></i> Cortes anteriores</span>
+      </div>
+      <div id="cortes-list">
+          <div class="empty">No hay cortes anteriores</div>
+      </div>
+    </div>
+    
+    <div class="tab-panel" id="tab-config">
+      <div class="card">
+        <div class="card-title"><i class="ti ti-credit-card" aria-hidden="true"></i> Datos de la tarjeta</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="fr">
+            <div class="fg"><label>Nombre de la tarjeta</label><input type="text" id="cfg-nombre" placeholder="Ej. BBVA Azul"></div>
+            <div class="fg"><label>Límite de crédito ($)</label><input type="number" id="cfg-limite" placeholder="0.00" min="0"></div>
+          </div>
+          <div class="fr">
+            <div class="fg">
+              <label>Día de corte (1-28)</label>
+              <input type="number" id="cfg-dia-corte" placeholder="Ej. 5" min="1" max="28">
+            </div>
+            <div class="fg">
+              <label>Días para pago después del corte</label>
+              <select id="cfg-dias-pago">
+                <option value="20">20 días (estándar MX)</option>
+                <option value="21">21 días</option>
+                <option value="25">25 días</option>
+                <option value="30">30 días</option>
+              </select>
+            </div>
+          </div>
+          <div id="fechas-preview" style="display:none;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 14px;font-size:12px;color:var(--color-text-secondary)"></div>
+          <button class="btn btn-primary" onclick="guardarConfig()">
+            <i class="ti ti-device-floppy" aria-hidden="true"></i> 
+            Guardar configuración</button>
+        </div>
+      </div>
+    
+      <div class="card warn-border">
+        <div class="card-title"><i class="ti ti-repeat" aria-hidden="true"></i> Cargos recurrentes / domiciliación</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px">
+          <div class="fr">
+            <div class="fg" style="flex:2"><label>Concepto</label><input type="text" id="rec-concepto" placeholder="Ej. Netflix, Telmex, Spotify..."></div>
+            <div class="fg" style="flex:1"><label>Cantidad ($)</label><input type="number" id="rec-cantidad" placeholder="0.00" min="0" step="0.01"></div>
+          </div>
+          <div class="fr">
+            <div class="fg">
+              <label>Día del mes en que carga</label>
+              <input type="number" id="rec-dia" placeholder="1-28" min="1" max="28">
+            </div>
+            <div class="fg">
+              <label>Periodicidad</label>
+              <select id="rec-periodo">
+                <option value="mensual">Mensual</option>
+                <option value="bimestral">Bimestral</option>
+                <option value="trimestral">Trimestral</option>
+                <option value="anual">Anual</option>
+              </select>
+            </div>
+            <button class="btn" style="flex-shrink:0" onclick="agregarRecurrente()"><i class="ti ti-plus" aria-hidden="true"></i> Agregar</button>
+          </div>
+        </div>
+        <div id="rec-list"><div class="empty" style="padding:1rem">Sin cargos recurrentes configurados</div></div>
+      
+          
+      <div class="divider"></div>
+      <div class="fr">
+        <button class="btn" onclick="exportarJSON()">
+          <i class="ti ti-download"></i> Exportar JSON
+        </button>
+        <button class="btn btn-primary" onclick="importarJSON()">
+          <i class="ti ti-upload"></i> Importar JSON
+        </button>
+      </div>
+      </div>
+    
+      <div class="card">
+        <div class="card-title" style="color:var(--color-text-danger)"><i class="ti ti-trash" aria-hidden="true"></i> Zona de peligro</div>
+        <button class="btn btn-danger" onclick="resetearDatos()"><i class="ti ti-trash" aria-hidden="true"></i> Eliminar todos los datos</button>
+      </div>
+    </div>
+    </div>
+</body>
+<script src="script.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js");
+  }
+</script>
+</html>
+
