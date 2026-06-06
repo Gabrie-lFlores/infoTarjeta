@@ -8,18 +8,57 @@ let state={config:{nombre:'Mi tarjeta',
            saldo:0,
            recurrentes:[]};
 
-function loadState(){
-    try{const r=localStorage.getItem('tc_v2');
-        if(r)state=JSON.parse(r)
-        }
-    catch(e){}checkRecurrentes();
-        render();
-    }
+// ── IndexedDB ──
+const DB_NAME = 'SaldoTarjetaDB';
+const DB_VERSION = 1;
+const STORE = 'datos';
 
-function saveState(){
-    try{localStorage.setItem('tc_v2',JSON.stringify(state))
-      
-    }catch(e){}
+function abrirDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      e.target.result.createObjectStore(STORE);
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function saveState() {
+  try {
+    const db = await abrirDB();
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).put(JSON.stringify(state), 'tc_v2');
+    await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+    db.close();
+  } catch(e) {
+    // fallback localStorage
+    try { localStorage.setItem('tc_v2', JSON.stringify(state)); } catch(_) {}
+    console.error('saveState error:', e);
+  }
+}
+
+async function loadState() {
+  try {
+    const db = await abrirDB();
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).get('tc_v2');
+    const data = await new Promise((res, rej) => {
+      req.onsuccess = () => res(req.result);
+      req.onerror = rej;
+    });
+    db.close();
+    if (data) state = JSON.parse(data);
+  } catch(e) {
+    // fallback localStorage
+    try {
+      const r = localStorage.getItem('tc_v2');
+      if (r) state = JSON.parse(r);
+    } catch(_) {}
+    console.error('loadState error:', e);
+  }
+  checkRecurrentes();
+  render();
 }
 
 function fmt(n){
@@ -249,7 +288,7 @@ async function agregarGasto(){
   state.transacciones.push({tipo:'gasto',concepto:c,cantidad:q,fecha:fechaHoy()});
   document.getElementById('inp-concepto').value='';
   document.getElementById('inp-cantidad').value='';
-  saveState();render();toast('Gasto registrado');switchTab('historial');
+  await saveState();render();toast('Gasto registrado');switchTab('historial');
 }
 
 async function registrarPago(){
@@ -257,13 +296,13 @@ async function registrarPago(){
   if(isNaN(q)||q<=0){toast('Ingresa un monto válido','warn');return}
   state.transacciones.push({tipo:'pago',concepto:'Pago realizado',cantidad:q,fecha:fechaHoy()});
   document.getElementById('inp-pago').value='';
-  saveState();render();toast('Pago registrado');
+  await saveState();render();toast('Pago registrado');
 }
 
 async function eliminarTxn(i){
   if(!confirm('¿Eliminar este movimiento?'))return;
   state.transacciones.splice(i,1);
-  saveState();render();toast('Movimiento eliminado');
+  await saveState();render();toast('Movimiento eliminado');
 }
 
 async function cerrarCorte(){
@@ -273,7 +312,7 @@ async function cerrarCorte(){
   state.saldo=saldoUsado();
   state.cortes.push({fecha:fechaHoy(),total,transacciones:[...state.transacciones]});
   state.transacciones=[];
-  saveState();render();toast('Corte cerrado');switchTab('cortes');
+  await saveState();render();toast('Corte cerrado');switchTab('cortes');
 }
 
 async function guardarConfig(){
@@ -281,7 +320,7 @@ async function guardarConfig(){
   state.config.limite=parseFloat(document.getElementById('cfg-limite').value)||0;
   state.config.diaCorte=parseInt(document.getElementById('cfg-dia-corte').value)||0;
   state.config.diasPago=parseInt(document.getElementById('cfg-dias-pago').value)||20;
-  saveState();render();toast('Configuración guardada');
+  await saveState();render();toast('Configuración guardada');
 }
 
 async function agregarRecurrente(){
@@ -296,13 +335,13 @@ async function agregarRecurrente(){
   document.getElementById('rec-cantidad').value='';
   document.getElementById('rec-dia').value='';
   checkRecurrentes();
-  saveState();render();toast('Cargo recurrente agregado');
+  await saveState();render();toast('Cargo recurrente agregado');
 }
 
 async function eliminarRec(i){
   if(!confirm('¿Eliminar este cargo recurrente?'))return;
   state.recurrentes.splice(i,1);
-  saveState();render();toast('Cargo eliminado');
+  await saveState();render();toast('Cargo eliminado');
 }
 
 function toggleCorte(i){const el=document.getElementById('cb-'+i);if(el)el.classList.toggle('open')}
@@ -310,7 +349,7 @@ function toggleCorte(i){const el=document.getElementById('cb-'+i);if(el)el.class
 async function resetearDatos(){
   if(!confirm('¿Eliminar TODOS los datos?'))return;
   state={config:{nombre:'Mi tarjeta',limite:0,diaCorte:5,diasPago:20},transacciones:[],cortes:[],saldo:0,recurrentes:[]};
-  saveState();render();toast('Datos eliminados');
+  await saveState();render();toast('Datos eliminados');
 }
 
 //Guardar datos
@@ -336,7 +375,7 @@ function exportarJSON() {
       const texto = await file.text();
       try {
         state = JSON.parse(texto);
-        saveState();
+        await saveState();
         render();
         toast('Datos importados correctamente');
       } catch (err) {
@@ -347,3 +386,4 @@ function exportarJSON() {
   }
 
 loadState();
+
