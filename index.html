@@ -184,7 +184,13 @@
         </button>
       </div>
       </div>
-    
+      <div class="card">
+        <div class="card-title">🔍 Diagnóstico IndexedDB</div>
+        <button class="btn" onclick="mostrarDiagnostico()">
+          📊 Ver datos guardados
+        </button>
+        <div id="diag-output" class="diag-box" style="display:none;margin-top:10px"></div>
+      </div>
       <div class="card">
         <div class="card-title" style="color:var(--color-text-danger)"><i class="ti ti-trash" aria-hidden="true"></i> Zona de peligro</div>
         <button class="btn btn-danger" onclick="resetearDatos()"><i class="ti ti-trash" aria-hidden="true"></i> Eliminar todos los datos</button>
