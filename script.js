@@ -8,16 +8,16 @@ let state={config:{nombre:'Mi tarjeta',
            saldo:0,
            recurrentes:[]};
 
-async function loadState(){
-    try{const r=await window.Storage.get('tc_v2');
-        if(r&&r.value)state=JSON.parse(r.value)
+function loadState(){
+    try{const r=localStorage.getItem('tc_v2');
+        if(r)state=JSON.parse(r)
         }
     catch(e){}checkRecurrentes();
         render();
     }
 
-async function saveState(){
-    try{await window.Storage.set('tc_v2',JSON.stringify(state))
+function saveState(){
+    try{localStorage.setItem('tc_v2',JSON.stringify(state))
       
     }catch(e){}
 }
@@ -249,7 +249,7 @@ async function agregarGasto(){
   state.transacciones.push({tipo:'gasto',concepto:c,cantidad:q,fecha:fechaHoy()});
   document.getElementById('inp-concepto').value='';
   document.getElementById('inp-cantidad').value='';
-  await saveState();render();toast('Gasto registrado');switchTab('historial');
+  saveState();render();toast('Gasto registrado');switchTab('historial');
 }
 
 async function registrarPago(){
@@ -257,13 +257,13 @@ async function registrarPago(){
   if(isNaN(q)||q<=0){toast('Ingresa un monto válido','warn');return}
   state.transacciones.push({tipo:'pago',concepto:'Pago realizado',cantidad:q,fecha:fechaHoy()});
   document.getElementById('inp-pago').value='';
-  await saveState();render();toast('Pago registrado');
+  saveState();render();toast('Pago registrado');
 }
 
 async function eliminarTxn(i){
   if(!confirm('¿Eliminar este movimiento?'))return;
   state.transacciones.splice(i,1);
-  await saveState();render();toast('Movimiento eliminado');
+  saveState();render();toast('Movimiento eliminado');
 }
 
 async function cerrarCorte(){
@@ -273,7 +273,7 @@ async function cerrarCorte(){
   state.saldo=saldoUsado();
   state.cortes.push({fecha:fechaHoy(),total,transacciones:[...state.transacciones]});
   state.transacciones=[];
-  await saveState();render();toast('Corte cerrado');switchTab('cortes');
+  saveState();render();toast('Corte cerrado');switchTab('cortes');
 }
 
 async function guardarConfig(){
@@ -281,7 +281,7 @@ async function guardarConfig(){
   state.config.limite=parseFloat(document.getElementById('cfg-limite').value)||0;
   state.config.diaCorte=parseInt(document.getElementById('cfg-dia-corte').value)||0;
   state.config.diasPago=parseInt(document.getElementById('cfg-dias-pago').value)||20;
-  await saveState();render();toast('Configuración guardada');
+  saveState();render();toast('Configuración guardada');
 }
 
 async function agregarRecurrente(){
@@ -296,13 +296,13 @@ async function agregarRecurrente(){
   document.getElementById('rec-cantidad').value='';
   document.getElementById('rec-dia').value='';
   checkRecurrentes();
-  await saveState();render();toast('Cargo recurrente agregado');
+  saveState();render();toast('Cargo recurrente agregado');
 }
 
 async function eliminarRec(i){
   if(!confirm('¿Eliminar este cargo recurrente?'))return;
   state.recurrentes.splice(i,1);
-  await saveState();render();toast('Cargo eliminado');
+  saveState();render();toast('Cargo eliminado');
 }
 
 function toggleCorte(i){const el=document.getElementById('cb-'+i);if(el)el.classList.toggle('open')}
@@ -310,7 +310,7 @@ function toggleCorte(i){const el=document.getElementById('cb-'+i);if(el)el.class
 async function resetearDatos(){
   if(!confirm('¿Eliminar TODOS los datos?'))return;
   state={config:{nombre:'Mi tarjeta',limite:0,diaCorte:5,diasPago:20},transacciones:[],cortes:[],saldo:0,recurrentes:[]};
-  await saveState();render();toast('Datos eliminados');
+  saveState();render();toast('Datos eliminados');
 }
 
 //Guardar datos
@@ -336,7 +336,7 @@ function exportarJSON() {
       const texto = await file.text();
       try {
         state = JSON.parse(texto);
-        await saveState();
+        saveState();
         render();
         toast('Datos importados correctamente');
       } catch (err) {
@@ -347,4 +347,3 @@ function exportarJSON() {
   }
 
 loadState();
-
