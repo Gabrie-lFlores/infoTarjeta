@@ -1,115 +1,97 @@
-// ── automaticos.js ────────────────────────────────────────
-// Aplica cargos automáticos: recurrentes, MSI e intereses.
-// Modifica state.transacciones e state.interesesAplicados.
+// ── automaticos.js v8 ─────────────────────────────────────
+// Opera sobre la tarjeta activa del estado.
 
-import { state, saveState } from './state.js';
+import { state, tarjetaActiva, saveState } from './state.js';
 import { calcFechas, calcMSI, calcIntereses, fechaHoy } from './calculos.js';
 
-// ── Cargos recurrentes / domiciliación ──
-export function checkRecurrentes() {
-  if (!state.recurrentes?.length) return;
+export function checkRecurrentes(tc) {
+  if (!tc.recurrentes?.length) return;
   const hoy     = new Date();
   const dHoy    = hoy.getDate();
   const mesAnio = hoy.getFullYear() * 100 + hoy.getMonth();
 
-  state.recurrentes.forEach(r => {
+  tc.recurrentes.forEach(r => {
     const key = `rec_${r.id}_${mesAnio}`;
-    if (state.transacciones.some(t => t.recKey === key)) return;
-
+    if (tc.transacciones.some(t => t.recKey === key)) return;
     let debe = false;
     if (r.periodo === 'mensual'    && dHoy >= parseInt(r.dia)) debe = true;
     if (r.periodo === 'bimestral'  && dHoy >= parseInt(r.dia) && hoy.getMonth() % 2 === 0) debe = true;
     if (r.periodo === 'trimestral' && dHoy >= parseInt(r.dia) && hoy.getMonth() % 3 === 0) debe = true;
     if (r.periodo === 'anual'      && dHoy >= parseInt(r.dia) && hoy.getMonth() === 0) debe = true;
-
     if (debe) {
-      state.transacciones.push({
-        tipo: 'gasto',
-        concepto: r.concepto,
+      tc.transacciones.push({
+        tipo: 'gasto', concepto: r.concepto,
         cantidad: parseFloat(r.cantidad),
-        fecha: fechaHoy(),
-        recKey: key,
-        esRec: true
+        fecha: fechaHoy(), recKey: key, esRec: true,
+        categoria: r.categoria || 'Servicios',
+        tipoGasto: r.tipoGasto || 'esencial'
       });
     }
   });
 }
 
-// ── Cuotas de meses sin intereses ──
-export function checkMSI() {
-  if (!state.msi?.length) return;
-  const hoy     = new Date();
-  const mesAnio = hoy.getFullYear() * 100 + hoy.getMonth();
-  const diaCorte = parseInt(state.config.diaCorte) || 5;
+export function checkMSI(tc) {
+  if (!tc.msi?.length) return;
+  const hoy      = new Date(); hoy.setHours(0, 0, 0, 0);
+  const mesAnio  = hoy.getFullYear() * 100 + hoy.getMonth();
+  const diaCorte = parseInt(tc.diaCorte) || 5;
 
-  state.msi.forEach(m => {
+  tc.msi.forEach(m => {
+    const inicio = new Date(m.fechaInicio + 'T00:00:00');
+    inicio.setHours(0, 0, 0, 0);
+    if (hoy < inicio) return;
+
     const { pagoMes, mesActual, vigente } = calcMSI(m);
     if (!vigente) return;
 
     const key = `msi_${m.id}_${mesAnio}`;
-    if (state.transacciones.some(t => t.recKey === key)) return;
+    if (tc.transacciones.some(t => t.recKey === key)) return;
 
-    if (hoy.getDate() >= diaCorte) {
-      state.transacciones.push({
-        tipo: 'gasto',
-        concepto: `${m.concepto} — MSI ${mesActual} de ${m.meses}`,
-        cantidad: pagoMes,
-        fecha: fechaHoy(),
-        recKey: key,
-        esMSI: true
-      });
-    }
+    const esElMesDeInicio =
+      hoy.getFullYear() === inicio.getFullYear() &&
+      hoy.getMonth()    === inicio.getMonth();
+
+    if (esElMesDeInicio && hoy.getDate() < diaCorte) return;
+    if (!esElMesDeInicio && hoy.getDate() < diaCorte) return;
+
+    tc.transacciones.push({
+      tipo: 'gasto',
+      concepto: `${m.concepto} — MSI ${mesActual} de ${m.meses}`,
+      cantidad: parseFloat(pagoMes.toFixed(2)),
+      fecha: fechaHoy(), recKey: key, esMSI: true,
+      categoria: 'Otro', tipoGasto: 'esencial'
+    });
   });
 
-  // Limpiar MSI vencidas
-  state.msi = state.msi.filter(m => calcMSI(m).vigente);
+  tc.msi = tc.msi.filter(m => calcMSI(m).vigente);
 }
 
-// ── Intereses automáticos tras vencimiento ──
-export function checkIntereses() {
-  if (!state.config.diaCorte) return;
-
-  const { cortePasado, pagoLimite } = calcFechas(
-    state.config.diaCorte,
-    state.config.diasPago
-  );
+export function checkIntereses(tc) {
+  if (!tc.diaCorte) return;
+  const { cortePasado, pagoLimite } = calcFechas(tc.diaCorte, tc.diasPago);
   const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-
-  // Solo aplica si ya venció la fecha límite
   if (hoy <= pagoLimite) return;
 
-  // Clave única por periodo para no duplicar
   const periodoKey = `int_${cortePasado.getFullYear()}_${cortePasado.getMonth()}_${cortePasado.getDate()}`;
-  if (state.interesesAplicados.includes(periodoKey)) return;
+  if (tc.interesesAplicados.includes(periodoKey)) return;
 
-  const saldoCorte = state.cortes.length
-    ? state.cortes[state.cortes.length - 1].total
-    : 0;
+  const saldoCorte = tc.cortes.length ? tc.cortes[tc.cortes.length - 1].total : 0;
+  if (saldoCorte <= 0) { tc.interesesAplicados.push(periodoKey); return; }
 
-  if (saldoCorte <= 0) {
-    state.interesesAplicados.push(periodoKey);
-    return;
-  }
-
-  const pagosRealizados = state.transacciones
+  const pagosRealizados = tc.transacciones
     .filter(t => t.tipo === 'pago')
     .reduce((s, t) => s + t.cantidad, 0);
 
-  const cargos = calcIntereses(
-    state.config,
-    saldoCorte,
-    pagosRealizados,
-    pagoLimite
-  );
-
-  cargos.forEach(c => state.transacciones.push(c));
-  state.interesesAplicados.push(periodoKey);
+  const cargos = calcIntereses(tc, saldoCorte, pagosRealizados, pagoLimite);
+  cargos.forEach(c => tc.transacciones.push({ ...c, categoria: 'Servicios', tipoGasto: 'esencial' }));
+  tc.interesesAplicados.push(periodoKey);
 }
 
-// ── Ejecutar todos los automáticos ──
 export async function aplicarAutomaticos() {
-  checkRecurrentes();
-  checkMSI();
-  checkIntereses();
+  state.tarjetas.forEach(tc => {
+    checkRecurrentes(tc);
+    checkMSI(tc);
+    checkIntereses(tc);
+  });
   await saveState();
 }

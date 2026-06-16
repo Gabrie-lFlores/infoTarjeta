@@ -6,226 +6,505 @@
   <title>SaldoTarjeta</title>
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#f5deb3">
+  <meta name="theme-color" content="#1a3a4a">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="SaldoTarjeta">
 </head>
 <body>
-<div class="app">
-  <div id="toast" class="toast"></div>
 
-  <div class="header">
-    <h1>💳 Control de tarjeta</h1>
-    <span class="sub" id="hdr-sub"></span>
-    <button class="btn btn-sm" onclick="window.close()" style="margin-left:auto">✕ Salir</button>
-  </div>
+<div id="aside-overlay" class="aside-overlay hidden"></div>
 
-  <div class="metrics">
-    <div class="metric"><div class="metric-label">Saldo usado</div><div class="metric-value danger" id="m-usado">$0.00</div></div>
-    <div class="metric"><div class="metric-label">Disponible</div><div class="metric-value success" id="m-disp">—</div></div>
-    <div class="metric"><div class="metric-label">Días para pago</div><div class="metric-value warn" id="m-dias">—</div></div>
-  </div>
-
-  <div id="limit-bar-section" style="margin-bottom:1rem;display:none">
-    <div class="bar-bg"><div class="bar-fill" id="limit-bar" style="width:0%"></div></div>
-    <span class="pct-label" id="pct-label"></span>
-  </div>
-
-  <div id="alerts-zone"></div>
-
-  <!-- Panel periodos -->
-  <div class="periodo-panel">
-    <div class="periodo-col periodo-anterior">
-      <div class="periodo-col-title">📋 Periodo anterior</div>
-      <div class="periodo-field"><span class="periodo-lbl">Fecha de corte</span><span class="periodo-val" id="pa-corte">—</span></div>
-      <div class="periodo-field"><span class="periodo-lbl">Límite de pago</span><span class="periodo-val" id="pa-limite-pago">—</span></div>
-      <div class="periodo-dias" id="pa-dias"></div>
-      <div class="divider"></div>
-      <div class="periodo-field"><span class="periodo-lbl">Saldo total</span><span class="periodo-val danger" id="pa-total">—</span></div>
-      <div class="periodo-field"><span class="periodo-lbl">Pago mínimo</span><span class="periodo-val warn" id="pa-minimo">—</span></div>
-      <div class="periodo-field"><span class="periodo-lbl">Sin intereses</span><span class="periodo-val success" id="pa-sin-int">—</span></div>
-      <div class="divider"></div>
-      <div class="periodo-field"><span class="periodo-lbl" style="font-weight:700">Mín. + MSI</span><span class="periodo-val warn" style="font-weight:700" id="pa-minimo-total">—</span></div>
-    </div>
-    <div class="periodo-col periodo-actual">
-      <div class="periodo-col-title">🗓 Periodo actual</div>
-      <div class="periodo-field"><span class="periodo-lbl">Inicio</span><span class="periodo-val" id="pact-inicio">—</span></div>
-      <div class="periodo-field"><span class="periodo-lbl">Próximo corte</span><span class="periodo-val" id="pact-corte">—</span></div>
-      <div class="periodo-field"><span class="periodo-lbl">Días restantes</span><span class="periodo-val" id="pact-dias">—</span></div>
-      <div class="divider"></div>
-      <div class="periodo-field"><span class="periodo-lbl">Total gastos</span><span class="periodo-val danger" id="pact-total">$0.00</span></div>
-      <div class="periodo-field"><span class="periodo-lbl">Meses activos</span><span class="periodo-val info" id="pact-meses">—</span></div>
+<!-- ══ ASIDE ══ -->
+<aside id="aside" class="aside">
+  <div class="aside-header">
+    <div class="aside-logo">💳</div>
+    <div class="aside-header-text">
+      <div class="aside-app-name">SaldoTarjeta</div>
+      <div class="aside-app-sub">Control financiero</div>
     </div>
   </div>
 
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('gastos')">➕ Gastos</button>
-    <button class="tab" onclick="switchTab('pagos')">💳 Pagos</button>
-    <button class="tab" onclick="switchTab('historial')">📄 Corte</button>
-    <button class="tab" onclick="switchTab('cortes')">🗂 Historial</button>
-    <button class="tab" onclick="switchTab('config')">⚙️ Config</button>
-  </div>
-
-  <!-- Gastos -->
-  <div class="tab-panel active" id="tab-gastos">
-    <div class="card">
-      <div class="card-title">🛒 Nuevo gasto</div>
-      <div class="fr">
-        <div class="fg" style="flex:2"><label>Concepto</label>
-          <input type="text" id="inp-concepto" placeholder="Ej. Supermercado, Gasolina..."></div>
-        <div class="fg" style="flex:1"><label>Cantidad ($)</label>
-          <input type="number" id="inp-cantidad" placeholder="0.00" min="0" step="0.01"></div>
-        <button class="btn btn-primary" onclick="agregarGasto()">➕ Agregar</button>
-      </div>
+  <!-- Agregar medio de pago -->
+  <div class="aside-section">
+    <button class="aside-menu-btn" data-action="toggle-submenu-agregar" data-toggle="agregar">
+      <span class="aside-menu-icon">➕</span>
+      <span class="aside-menu-label">Agregar medio de pago</span>
+      <span class="aside-arrow" id="arrow-agregar">›</span>
+    </button>
+    <div class="aside-submenu hidden" id="submenu-agregar">
+      <button class="aside-subitem" data-action="nueva-tarjeta">💳 Tarjeta de crédito</button>
+      <button class="aside-subitem" data-action="nuevo-monedero">👛 Monedero (efectivo)</button>
     </div>
   </div>
 
-  <!-- Pagos -->
-  <div class="tab-panel" id="tab-pagos">
-    <div class="card success-border">
-      <div class="card-title">🧾 Registrar pago</div>
-      <div class="fr">
-        <div class="fg"><label>Monto del pago ($)</label>
-          <input type="number" id="inp-pago" placeholder="0.00" min="0" step="0.01"></div>
-        <button class="btn btn-success" onclick="registrarPago()">✔ Pagar</button>
-      </div>
-    </div>
+  <!-- Tarjetas de crédito -->
+  <div class="aside-section">
+    <div class="aside-section-title">Tarjetas de crédito</div>
+    <div id="aside-tarjetas-zona"></div>
   </div>
 
-  <!-- Corte actual -->
-  <div class="tab-panel" id="tab-historial">
-    <div class="section-hd">
-      <span class="section-title">📄 Movimientos <span class="badge badge-info" id="txn-count">0</span></span>
-      <button class="btn btn-sm" onclick="cerrarCorte()">✂️ Cerrar corte</button>
-    </div>
-    <div id="txn-list"><div class="empty">Sin movimientos en este corte</div></div>
-    <div id="corte-subtotal" style="display:none;text-align:right;font-size:14px;color:#666;padding-bottom:1rem">
-      Total corte: <strong id="corte-total-val" style="color:#c0392b"></strong>
-    </div>
+  <!-- Pago en efectivo -->
+  <div class="aside-section">
+    <div class="aside-section-title">Pago en efectivo</div>
+    <div id="aside-monederos-zona"></div>
   </div>
 
-  <!-- Historial -->
-  <div class="tab-panel" id="tab-cortes">
-    <div class="section-hd"><span class="section-title">🗂 Cortes anteriores</span></div>
-    <div id="cortes-list"><div class="empty">No hay cortes anteriores</div></div>
+  <!-- Estadísticos globales -->
+  <div class="aside-section" id="aside-stats-global">
+    <div class="aside-section-title">Estadísticos</div>
+    <button class="aside-item" data-vista="reporte">📊 Todos los medios de pago</button>
   </div>
 
-  <!-- Config -->
-  <div class="tab-panel" id="tab-config">
+  <!-- Presupuesto (botón integrado) -->
+  <div class="aside-section aside-section--presupuesto">
+    <button class="aside-presupuesto-btn" data-vista="presupuesto">
+      📋 Elaboración de presupuesto
+    </button>
+    <div id="aside-presupuesto-resumen"></div>
+  </div>
 
-    <div class="card">
-      <div class="card-title">💳 Datos de la tarjeta</div>
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <div class="fr">
-          <div class="fg"><label>Nombre de la tarjeta</label><input type="text" id="cfg-nombre" placeholder="Ej. BBVA Azul"></div>
-          <div class="fg"><label>Límite de crédito ($)</label><input type="number" id="cfg-limite" placeholder="0.00" min="0"></div>
+  <!-- Respaldo -->
+  <div class="aside-section aside-section--bottom">
+    <div class="aside-section-title">Configuración</div>
+    <button class="aside-item" data-vista="respaldo">📁 Respaldo y diagnóstico</button>
+  </div>
+</aside>
+
+<!-- ══ MAIN CONTENT ══ -->
+<div class="main-content">
+
+  <!-- Header (solo móvil) -->
+  <header class="app-header">
+    <button id="btn-menu" class="btn-icon" aria-label="Menú">☰</button>
+    <span class="app-header-title">SaldoTarjeta</span>
+    <button id="btn-salir" class="btn-icon btn-icon--right" aria-label="Salir">✕</button>
+  </header>
+
+  <!-- ══ VISTA: Estado de cuenta ══ -->
+  <div class="vista vista--active" id="vista-estado-cuenta">
+    <div class="vista-content">
+      <div class="ec-header">
+        <div class="ec-header-text">
+          <div class="ec-titulo">Estado de cuenta</div>
+          <div class="ec-nombre" id="ec-nombre">—</div>
         </div>
-        <div class="fr">
-          <div class="fg"><label>Día de corte (1-28)</label>
-            <input type="number" id="cfg-dia-corte" placeholder="Ej. 5" min="1" max="28"></div>
-          <div class="fg"><label>Días para pago tras corte</label>
-            <select id="cfg-dias-pago">
-              <option value="20">20 días (estándar MX)</option>
-              <option value="21">21 días</option>
-              <option value="25">25 días</option>
-              <option value="30">30 días</option>
+        <div class="ec-metrics">
+          <div class="ec-metric"><div class="ec-metric-label">Saldo usado</div><div class="ec-metric-val danger" id="ec-usado">$0.00</div></div>
+          <div class="ec-metric"><div class="ec-metric-label">Disponible</div><div class="ec-metric-val success" id="ec-disp">—</div></div>
+          <div class="ec-metric"><div class="ec-metric-label">Límite</div><div class="ec-metric-val" id="ec-limite">—</div></div>
+        </div>
+      </div>
+
+      <div id="ec-bar-section" class="bar-section hidden">
+        <div class="bar-bg"><div class="bar-fill" id="ec-bar"></div></div>
+        <span class="pct-label" id="ec-pct"></span>
+      </div>
+
+      <div id="ec-alerts"></div>
+      <div id="ec-alert" class="ec-hint"></div>
+
+      <!-- Dos columnas: periodo anterior | periodo actual -->
+      <div class="ec-grid">
+        <div class="ec-panel" id="ec-corte-anterior">
+          <div class="ec-panel-title">📋 Periodo anterior</div>
+          <div class="ec-row"><span class="ec-lbl">Fecha de corte</span><span class="ec-val" id="ec-ant-fecha">—</span></div>
+          <div class="ec-row"><span class="ec-lbl">Límite de pago</span><span class="ec-val" id="ec-ant-limite">—</span></div>
+          <div id="ec-ant-dias" class="ec-dias-badge"></div>
+          <div class="ec-divider"></div>
+          <div class="ec-row"><span class="ec-lbl">Saldo total</span><span class="ec-val danger" id="ec-ant-total">—</span></div>
+          <div class="ec-row"><span class="ec-lbl">Pago mínimo</span><span class="ec-val warn" id="ec-ant-min">—</span></div>
+          <div class="ec-row"><span class="ec-lbl">Sin intereses</span><span class="ec-val success" id="ec-ant-sin-int">—</span></div>
+          <div class="ec-row"><span class="ec-lbl">Cuota MSI</span><span class="ec-val info" id="ec-ant-msi">—</span></div>
+          <div class="ec-divider"></div>
+          <div class="ec-row ec-row--bold"><span class="ec-lbl">Mín. + MSI</span><span class="ec-val warn" id="ec-ant-min-msi">—</span></div>
+        </div>
+        <div class="ec-panel" id="ec-corte-actual">
+          <div class="ec-panel-title">🗓 Periodo actual</div>
+          <div class="ec-row"><span class="ec-lbl">Inicio</span><span class="ec-val" id="ec-act-inicio">—</span></div>
+          <div class="ec-row"><span class="ec-lbl">Próximo corte</span><span class="ec-val" id="ec-act-corte">—</span></div>
+          <div class="ec-row"><span class="ec-lbl">Días restantes</span><span class="ec-val" id="ec-act-dias">—</span></div>
+          <div class="ec-divider"></div>
+          <div class="ec-row"><span class="ec-lbl">Total gastos</span><span class="ec-val danger" id="ec-act-total">$0.00</span></div>
+          <div class="ec-row"><span class="ec-lbl">MSI activas</span><span class="ec-val info" id="ec-act-msi">—</span></div>
+        </div>
+      </div>
+
+      <!-- Movimientos del periodo -->
+      <div class="ec-movimientos-titulo">Movimientos del periodo</div>
+      <div id="ec-movimientos" class="ec-movimientos"></div>
+    </div>
+  </div>
+
+  <!-- ══ VISTA: Registrar gasto ══ -->
+  <div class="vista" id="vista-gasto-tarjeta">
+    <div class="vista-content">
+      <div class="vista-titulo">➕ Registrar gasto</div>
+      <div class="card">
+        <div class="form-stack">
+          <div class="fg"><label for="inp-concepto">Concepto</label>
+            <input type="text" id="inp-concepto" placeholder="Ej. Supermercado, Gasolina..."></div>
+          <div class="fg"><label for="inp-cantidad">Cantidad ($)</label>
+            <input type="number" id="inp-cantidad" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="fg"><label for="inp-categoria">¿En qué gasté?</label>
+            <select id="inp-categoria">
+              <option value="Alimentación">🍽 Alimentación</option>
+              <option value="Vivienda">🏠 Vivienda</option>
+              <option value="Transporte">🚗 Transporte</option>
+              <option value="Salud">💊 Salud</option>
+              <option value="Educación">📚 Educación</option>
+              <option value="Entretenimiento">🎬 Entretenimiento</option>
+              <option value="Tecnología">💻 Tecnología</option>
+              <option value="Servicios">⚡ Servicios</option>
+              <option value="Ahorro">🏦 Ahorro</option>
+              <option value="Inversión">📈 Inversión</option>
+              <option value="Impuestos">🧾 Impuestos</option>
+              <option value="AFORE">🔒 AFORE</option>
+              <option value="Seguro">🛡 Seguro</option>
+              <option value="Otro">📦 Otro</option>
             </select></div>
+          <div class="fg"><label for="inp-tipo-gasto">Tipo de gasto</label>
+            <select id="inp-tipo-gasto">
+              <option value="esencial">✅ Esencial — ¿Lo necesito para vivir?</option>
+              <option value="valioso">💙 Valioso — ¿Me aporta bienestar real?</option>
+              <option value="conveniencia">⏱ Conveniencia — ¿Pago por ahorrar tiempo?</option>
+              <option value="impulso">⚡ Impulso — ¿Lo compré sin planearlo?</option>
+              <option value="estatus">👑 Estatus — ¿Lo compré para impresionar?</option>
+            </select></div>
+          <button id="btn-agregar-gasto" class="btn btn-primary btn--full">➕ Registrar gasto</button>
         </div>
-        <div class="fr">
-          <div class="fg">
-            <label>Tasa de interés ordinario (% anual)</label>
-            <input type="number" id="cfg-tasa-ord" placeholder="Ej. 57.6" min="0" step="0.1">
-          </div>
-          <div class="fg">
-            <label>Tasa de interés moratorio (% anual)</label>
-            <input type="number" id="cfg-tasa-mor" placeholder="Ej. 86.4" min="0" step="0.1">
-          </div>
-        </div>
-        <div class="tasa-nota">
-          💡 Los intereses se aplican automáticamente al día siguiente del vencimiento si hay saldo no pagado.
-          El mínimo a pagar es el mayor entre el 5% del saldo o el 1.25% del límite de crédito.
-        </div>
-        <div id="fechas-preview" style="display:none;background:#f5f5f5;border-radius:8px;padding:10px 14px;font-size:13px;color:#666"></div>
-        <button class="btn btn-primary" onclick="guardarConfig()">💾 Guardar configuración</button>
       </div>
     </div>
+  </div>
 
-    <div class="card" style="border-color:#8e44ad">
-      <div class="card-title" style="color:#8e44ad">📅 Compras a meses sin intereses</div>
-      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px">
-        <div class="fr">
-          <div class="fg" style="flex:2"><label>Concepto</label>
-            <input type="text" id="msi-concepto" placeholder="Ej. Laptop, Refrigerador..."></div>
-          <div class="fg" style="flex:1"><label>Monto total ($)</label>
-            <input type="number" id="msi-monto" placeholder="0.00" min="0" step="0.01"></div>
+  <!-- ══ VISTA: Registrar pago ══ -->
+  <div class="vista" id="vista-pago-tarjeta">
+    <div class="vista-content">
+      <div class="vista-titulo">💳 Registrar pago</div>
+      <div class="card card--success">
+        <div class="form-stack">
+          <div class="fg"><label for="inp-pago">Monto del pago ($)</label>
+            <input type="number" id="inp-pago" placeholder="0.00" min="0" step="0.01"></div>
+          <button id="btn-registrar-pago" class="btn btn-success btn--full">✔ Registrar pago</button>
         </div>
-        <div class="fr">
-          <div class="fg"><label>Número de meses</label>
-            <input type="number" id="msi-meses" placeholder="Ej. 6" min="1" max="48"></div>
-          <div class="fg"><label>Fecha de inicio</label>
-            <input type="date" id="msi-fecha-inicio"></div>
-        </div>
-        <div id="msi-preview" style="display:none;background:#f5eefa;border-radius:8px;padding:10px 14px;font-size:13px;color:#8e44ad"></div>
-        <button class="btn" style="border-color:#8e44ad;color:#8e44ad" onclick="agregarMSI()">➕ Agregar compra a meses</button>
       </div>
-      <div id="msi-list"><div class="empty" style="padding:1rem">Sin compras a meses registradas</div></div>
     </div>
+  </div>
 
-    <div class="card warn-border">
-      <div class="card-title">🔄 Domiciliación / Cargos recurrentes</div>
-      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px">
-        <div class="fr">
-          <div class="fg" style="flex:2"><label>Concepto</label>
-            <input type="text" id="rec-concepto" placeholder="Ej. Netflix, Telmex, Spotify..."></div>
-          <div class="fg" style="flex:1"><label>Cantidad ($)</label>
-            <input type="number" id="rec-cantidad" placeholder="0.00" min="0" step="0.01"></div>
-        </div>
-        <div class="fr">
-          <div class="fg"><label>Día del mes</label>
-            <input type="number" id="rec-dia" placeholder="1-28" min="1" max="28"></div>
-          <div class="fg"><label>Periodicidad</label>
+  <!-- ══ VISTA: Corte actual ══ -->
+  <div class="vista" id="vista-estado-cuenta-corte">
+    <div class="vista-content">
+      <div class="vista-titulo-row">
+        <span class="vista-titulo">📄 Corte actual</span>
+        <span class="badge badge-info" id="txn-count">0</span>
+        <button id="btn-cerrar-corte" class="btn btn-sm">✂️ Cerrar corte</button>
+      </div>
+      <div id="txn-list"><div class="empty">Sin movimientos</div></div>
+      <div id="corte-subtotal" class="corte-subtotal hidden">
+        Total: <strong id="corte-total-val" class="color-danger"></strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VISTA: Historial ══ -->
+  <div class="vista" id="vista-historial">
+    <div class="vista-content">
+      <div class="vista-titulo">🗂 Historial de cortes</div>
+      <div id="cortes-list"><div class="empty">No hay cortes anteriores</div></div>
+    </div>
+  </div>
+
+  <!-- ══ VISTA: Domiciliados ══ -->
+  <div class="vista" id="vista-domiciliados">
+    <div class="vista-content">
+      <div class="vista-titulo">🔄 Domiciliación y recurrentes</div>
+      <div class="card card--warn">
+        <div class="card-title">Nuevo cargo recurrente</div>
+        <div class="form-stack">
+          <div class="fg"><label for="rec-concepto">Concepto</label>
+            <input type="text" id="rec-concepto" placeholder="Ej. Netflix, Telmex..."></div>
+          <div class="fr">
+            <div class="fg"><label for="rec-cantidad">Cantidad ($)</label>
+              <input type="number" id="rec-cantidad" placeholder="0.00" min="0" step="0.01"></div>
+            <div class="fg"><label for="rec-dia">Día</label>
+              <input type="number" id="rec-dia" placeholder="1-28" min="1" max="28"></div>
+          </div>
+          <div class="fg"><label for="rec-periodo">Periodicidad</label>
             <select id="rec-periodo">
               <option value="mensual">Mensual</option>
               <option value="bimestral">Bimestral</option>
               <option value="trimestral">Trimestral</option>
               <option value="anual">Anual</option>
             </select></div>
-          <button class="btn" style="flex-shrink:0" onclick="agregarRecurrente()">➕ Agregar</button>
+          <button id="btn-agregar-rec" class="btn btn--full">➕ Agregar cargo</button>
         </div>
       </div>
-      <div id="rec-list"><div class="empty" style="padding:1rem">Sin cargos recurrentes configurados</div></div>
+      <div class="vista-subtitle">Configurados</div>
+      <div id="rec-list"><div class="empty empty--pad">Sin cargos recurrentes</div></div>
     </div>
+  </div>
 
-    <div class="card">
-      <div class="card-title">📁 Respaldo de datos</div>
-      <div class="fr" style="flex-wrap:wrap">
-        <button class="btn" onclick="exportarJSON()">⬇️ Exportar JSON</button>
-        <button class="btn btn-primary" onclick="importarJSON()">⬆️ Importar JSON</button>
+  <!-- ══ VISTA: MSI ══ -->
+  <div class="vista" id="vista-msi">
+    <div class="vista-content">
+      <div class="vista-titulo">📅 Meses sin intereses</div>
+      <div class="card card--msi">
+        <div class="card-title card-title--msi">Nueva compra MSI</div>
+        <div class="form-stack">
+          <div class="fg"><label for="msi-concepto">Concepto</label>
+            <input type="text" id="msi-concepto" placeholder="Ej. Laptop, Refrigerador..."></div>
+          <div class="fr">
+            <div class="fg"><label for="msi-monto">Monto total ($)</label>
+              <input type="number" id="msi-monto" placeholder="0.00" min="0" step="0.01"></div>
+            <div class="fg"><label for="msi-meses">Meses</label>
+              <input type="number" id="msi-meses" placeholder="Ej. 6" min="1" max="48"></div>
+          </div>
+          <div class="fg"><label for="msi-fecha-inicio">Fecha del primer cargo</label>
+            <input type="date" id="msi-fecha-inicio"></div>
+          <div id="msi-preview" class="preview-box preview-box--msi hidden"></div>
+          <button id="btn-agregar-msi" class="btn btn-msi btn--full">➕ Agregar</button>
+        </div>
       </div>
-      <div class="divider"></div>
-      <div class="card-title">🔍 Diagnóstico IndexedDB</div>
-      <button class="btn" onclick="mostrarDiagnostico()">📊 Ver datos guardados</button>
-      <div id="diag-output" class="diag-box" style="display:none;margin-top:10px"></div>
+      <div class="vista-subtitle">Registradas</div>
+      <div id="msi-list"><div class="empty empty--pad">Sin compras a meses</div></div>
     </div>
+  </div>
 
-    <div class="card">
-      <div class="card-title" style="color:#c0392b">🗑 Zona de peligro</div>
-      <button class="btn btn-danger" onclick="resetearDatos()">🗑 Eliminar todos los datos</button>
+  <!-- ══ VISTA: Estadísticos tarjeta ══ -->
+  <div class="vista" id="vista-estadisticos-tc">
+    <div class="vista-content">
+      <div class="vista-titulo">📊 Estadísticos — <span id="stats-tc-nombre"></span></div>
+      <div class="card">
+        <div class="card-title">Distribución de gastos</div>
+        <div class="canvas-wrap"><canvas id="canvas-tc-cat" class="chart-canvas"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Tipo de gasto</div>
+        <div class="canvas-wrap"><canvas id="canvas-tc-tipo" class="chart-canvas"></canvas></div>
+      </div>
     </div>
+  </div>
 
+  <!-- ══ VISTA: Config tarjeta ══ -->
+  <div class="vista" id="vista-config-tc">
+    <div class="vista-content">
+      <div class="vista-titulo">⚙️ Configurar tarjeta</div>
+      <div class="card">
+        <div class="form-stack">
+          <div class="fg"><label for="cfg-nombre">Nombre</label>
+            <input type="text" id="cfg-nombre" placeholder="Ej. BBVA Azul"></div>
+          <div class="fg"><label for="cfg-limite">Límite de crédito ($)</label>
+            <input type="number" id="cfg-limite" placeholder="0.00" min="0"></div>
+          <div class="fg"><label for="cfg-dia-corte">Día de corte (1-28)</label>
+            <input type="number" id="cfg-dia-corte" placeholder="Ej. 5" min="1" max="28"></div>
+          <div class="fg"><label for="cfg-dias-pago">Días para pago tras corte</label>
+            <select id="cfg-dias-pago">
+              <option value="20">20 días (estándar MX)</option>
+              <option value="21">21 días</option>
+              <option value="25">25 días</option>
+              <option value="30">30 días</option>
+            </select></div>
+          <div class="fg"><label for="cfg-tasa-ord">Tasa interés ordinario (% anual)</label>
+            <input type="number" id="cfg-tasa-ord" placeholder="Ej. 57.6" min="0" step="0.1"></div>
+          <div class="fg"><label for="cfg-tasa-mor">Tasa interés moratorio (% anual)</label>
+            <input type="number" id="cfg-tasa-mor" placeholder="Ej. 86.4" min="0" step="0.1"></div>
+          <div class="tasa-nota">💡 El mínimo a pagar es el mayor entre 5% del saldo o 1.25% del límite.</div>
+          <div id="fechas-preview" class="preview-box hidden"></div>
+          <button id="btn-guardar-config" class="btn btn-primary btn--full">💾 Guardar</button>
+          <button id="btn-eliminar-tarjeta" class="btn btn-danger btn--full">🗑 Eliminar esta tarjeta</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VISTA: Monedero ══ -->
+  <div class="vista" id="vista-gasto-monedero">
+    <div class="vista-content">
+      <div class="vista-titulo-row">
+        <span class="vista-titulo">👛 <span id="mon-nombre-display">Efectivo</span></span>
+        <span class="badge badge-info" id="mon-periodo-display">quincenal</span>
+        <button id="btn-cerrar-corte-mon" class="btn btn-sm">✂️ Cerrar periodo</button>
+      </div>
+      <div class="metric-highlight">
+        <span class="metric-highlight-label">Total del periodo</span>
+        <span class="metric-highlight-value color-danger" id="mon-total">$0.00</span>
+      </div>
+      <div class="card">
+        <div class="card-title">💵 Nuevo gasto en efectivo</div>
+        <div class="form-stack">
+          <div class="fg"><label for="mon-concepto">Concepto</label>
+            <input type="text" id="mon-concepto" placeholder="Ej. Mercado, Taxi..."></div>
+          <div class="fg"><label for="mon-cantidad">Cantidad ($)</label>
+            <input type="number" id="mon-cantidad" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="fg"><label for="mon-categoria">¿En qué gasté?</label>
+            <select id="mon-categoria">
+              <option value="Alimentación">🍽 Alimentación</option>
+              <option value="Vivienda">🏠 Vivienda</option>
+              <option value="Transporte">🚗 Transporte</option>
+              <option value="Salud">💊 Salud</option>
+              <option value="Educación">📚 Educación</option>
+              <option value="Entretenimiento">🎬 Entretenimiento</option>
+              <option value="Tecnología">💻 Tecnología</option>
+              <option value="Servicios">⚡ Servicios</option>
+              <option value="Ahorro">🏦 Ahorro</option>
+              <option value="Inversión">📈 Inversión</option>
+              <option value="Impuestos">🧾 Impuestos</option>
+              <option value="AFORE">🔒 AFORE</option>
+              <option value="Seguro">🛡 Seguro</option>
+              <option value="Otro">📦 Otro</option>
+            </select></div>
+          <div class="fg"><label for="mon-tipo-gasto">Tipo de gasto</label>
+            <select id="mon-tipo-gasto">
+              <option value="esencial">✅ Esencial</option>
+              <option value="valioso">💙 Valioso</option>
+              <option value="conveniencia">⏱ Conveniencia</option>
+              <option value="impulso">⚡ Impulso</option>
+              <option value="estatus">👑 Estatus</option>
+            </select></div>
+          <button id="btn-agregar-gasto-mon" class="btn btn-primary btn--full">➕ Agregar gasto</button>
+        </div>
+      </div>
+      <div class="vista-subtitle">Movimientos</div>
+      <div id="mon-txn-list"><div class="empty">Sin movimientos</div></div>
+    </div>
+  </div>
+
+  <!-- ══ VISTA: Estadísticos monedero ══ -->
+  <div class="vista" id="vista-estadisticos-mon">
+    <div class="vista-content">
+      <div class="vista-titulo">📊 Estadísticos — <span id="stats-mon-nombre"></span></div>
+      <div class="card">
+        <div class="card-title">Distribución de gastos</div>
+        <div class="canvas-wrap"><canvas id="canvas-mon-cat" class="chart-canvas"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Tipo de gasto</div>
+        <div class="canvas-wrap"><canvas id="canvas-mon-tipo" class="chart-canvas"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VISTA: Config monedero ══ -->
+  <div class="vista" id="vista-config-mon">
+    <div class="vista-content">
+      <div class="vista-titulo">⚙️ Configurar monedero</div>
+      <div class="card">
+        <div class="form-stack">
+          <div class="fg"><label for="mon-cfg-nombre">Nombre</label>
+            <input type="text" id="mon-cfg-nombre" placeholder="Ej. Efectivo, Gastos diarios"></div>
+          <div class="fg"><label for="mon-cfg-periodo">Periodo de corte</label>
+            <select id="mon-cfg-periodo">
+              <option value="semanal">Semanal</option>
+              <option value="quincenal">Quincenal</option>
+              <option value="mensual">Mensual</option>
+            </select></div>
+          <button id="btn-guardar-config-mon" class="btn btn-primary btn--full">💾 Guardar</button>
+          <button id="btn-eliminar-monedero" class="btn btn-danger btn--full">🗑 Eliminar monedero</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VISTA: Reporte global ══ -->
+  <div class="vista" id="vista-reporte">
+    <div class="vista-content">
+      <div class="vista-titulo-row">
+        <span class="vista-titulo">📊 Reporte global</span>
+        <select id="reporte-periodo" class="select-sm">
+          <option value="1">Este mes</option>
+          <option value="3">3 meses</option>
+          <option value="6">6 meses</option>
+          <option value="12">12 meses</option>
+        </select>
+      </div>
+      <div id="reporte-resumen" class="reporte-resumen"></div>
+      <div class="reporte-section">
+        <div class="reporte-section-title">🍽 ¿En qué gasté?</div>
+        <div class="canvas-wrap"><canvas id="canvas-pastel" class="chart-canvas"></canvas></div>
+      </div>
+      <div class="reporte-section">
+        <div class="reporte-section-title">🧠 Tipo de gasto</div>
+        <div class="canvas-wrap"><canvas id="canvas-pastel-tipo" class="chart-canvas"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VISTA: Presupuesto ══ -->
+  <div class="vista" id="vista-presupuesto">
+    <div class="vista-content">
+      <div class="vista-titulo">📋 Elaboración de presupuesto</div>
+      <div class="card">
+        <div class="form-stack">
+          <div class="fg"><label for="pres-total">Presupuesto mensual total ($)</label>
+            <input type="number" id="pres-total" placeholder="0.00" min="0" step="100"></div>
+          <div class="tasa-nota">💡 Ingresa cuánto puedes gastar en cada categoría. El sistema calculará el porcentaje automáticamente.</div>
+        </div>
+      </div>
+      <!-- Grupos de presupuesto -->
+      <div class="pres-grupos">
+        <div class="pres-grupo"><div class="pres-grupo-title">🏠 Hogar</div><div id="pres-grupo-hogar"></div></div>
+        <div class="pres-grupo"><div class="pres-grupo-title">🍽 Alimentación</div><div id="pres-grupo-alimentación"></div></div>
+        <div class="pres-grupo"><div class="pres-grupo-title">🚗 Vehículo</div><div id="pres-grupo-vehículo"></div></div>
+        <div class="pres-grupo"><div class="pres-grupo-title">💊 Salud</div><div id="pres-grupo-salud"></div></div>
+        <div class="pres-grupo"><div class="pres-grupo-title">📚 Educación</div><div id="pres-grupo-educación"></div></div>
+        <div class="pres-grupo"><div class="pres-grupo-title">💰 Finanzas</div><div id="pres-grupo-finanzas"></div></div>
+        <div class="pres-grupo"><div class="pres-grupo-title">🎬 Ocio</div><div id="pres-grupo-ocio"></div></div>
+        <div class="pres-grupo"><div class="pres-grupo-title">📦 Otros</div><div id="pres-grupo-otros"></div></div>
+      </div>
+      <button id="btn-guardar-presupuesto" class="btn btn-primary btn--full">💾 Guardar presupuesto</button>
+    </div>
+  </div>
+
+  <!-- ══ VISTA: Respaldo ══ -->
+  <div class="vista" id="vista-respaldo">
+    <div class="vista-content">
+      <div class="vista-titulo">📁 Respaldo y diagnóstico</div>
+      <div class="card"><div class="card-title">📤 Exportar datos</div>
+        <p class="card-desc">Descarga un archivo JSON con todos tus datos.</p>
+        <button id="btn-exportar" class="btn btn--full">⬇️ Exportar JSON</button></div>
+      <div class="card"><div class="card-title">📥 Importar datos</div>
+        <p class="card-desc">Carga un JSON previamente exportado.</p>
+        <button id="btn-importar" class="btn btn-primary btn--full">⬆️ Importar JSON</button></div>
+      <div class="card"><div class="card-title">🔍 Diagnóstico IndexedDB</div>
+        <button id="btn-diagnostico" class="btn btn--full">📊 Ver datos guardados</button>
+        <div id="diag-output" class="diag-box hidden diag-box--mt"></div></div>
+      <div class="card card--danger"><div class="card-title card-title--danger">🗑 Zona de peligro</div>
+        <button id="btn-reset" class="btn btn-danger btn--full">🗑 Eliminar todos los datos</button></div>
+    </div>
+  </div>
+
+</div><!-- fin main-content -->
+
+<div id="toast" class="toast"></div>
+
+<!-- Modal exceso presupuesto -->
+<div id="modal-exceso" class="modal-overlay hidden">
+  <div class="modal-box modal-box--warn">
+    <div class="modal-exceso-icon">⚠️</div>
+    <div class="modal-title">Presupuesto excedido</div>
+    <p class="modal-exceso-texto">El gasto en <strong id="exceso-categoria"></strong> supera tu presupuesto mensual.</p>
+    <div class="exceso-grid">
+      <div class="exceso-row"><span>Límite establecido</span><span id="exceso-limite"></span></div>
+      <div class="exceso-row"><span>Gastado hasta ahora</span><span id="exceso-actual"></span></div>
+      <div class="exceso-row"><span>Este gasto</span><span id="exceso-nuevo"></span></div>
+      <div class="exceso-row exceso-row--total"><span>Nuevo total</span><span id="exceso-total" class="color-danger"></span></div>
+      <div class="exceso-row exceso-row--exceso"><span>Te excedes por</span><span id="exceso-cantidad" class="color-danger"></span></div>
+    </div>
+    <p class="modal-exceso-nota">El gasto fue registrado. Esta es solo una notificación.</p>
+    <button id="btn-cerrar-exceso" class="btn btn-primary btn--full">Entendido</button>
   </div>
 </div>
 
 <!-- Modal recurrente -->
-<div id="modal-rec" class="modal-overlay" style="display:none" onclick="cerrarModalRec(event)">
+<div id="modal-rec" class="modal-overlay hidden">
   <div class="modal-box">
     <div class="modal-title">✏️ Editar cargo recurrente</div>
     <input type="hidden" id="edit-rec-idx">
-    <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="form-stack">
       <div class="fg"><label>Concepto</label><input type="text" id="edit-rec-concepto"></div>
       <div class="fr">
         <div class="fg"><label>Cantidad ($)</label><input type="number" id="edit-rec-cantidad" min="0" step="0.01"></div>
-        <div class="fg"><label>Día del mes</label><input type="number" id="edit-rec-dia" min="1" max="28"></div>
+        <div class="fg"><label>Día</label><input type="number" id="edit-rec-dia" min="1" max="28"></div>
       </div>
       <div class="fg"><label>Periodicidad</label>
         <select id="edit-rec-periodo">
@@ -235,40 +514,36 @@
           <option value="anual">Anual</option>
         </select></div>
       <div class="fr">
-        <button class="btn btn-primary" onclick="guardarRecurrente()">💾 Guardar</button>
-        <button class="btn btn-danger" onclick="eliminarRecDesdeModal()">🗑 Eliminar</button>
-        <button class="btn" onclick="cerrarModalRec()">Cancelar</button>
+        <button id="btn-guardar-rec" class="btn btn-primary">💾 Guardar</button>
+        <button id="btn-eliminar-rec" class="btn btn-danger">🗑 Eliminar</button>
+        <button id="btn-cancelar-rec" class="btn">Cancelar</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- Modal MSI -->
-<div id="modal-msi" class="modal-overlay" style="display:none" onclick="cerrarModalMSI(event)">
+<div id="modal-msi" class="modal-overlay hidden">
   <div class="modal-box">
     <div class="modal-title">✏️ Editar compra a meses</div>
     <input type="hidden" id="edit-msi-idx">
-    <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="form-stack">
       <div class="fg"><label>Concepto</label><input type="text" id="edit-msi-concepto"></div>
       <div class="fr">
-        <div class="fg"><label>Monto total ($)</label><input type="number" id="edit-msi-monto" min="0" step="0.01"></div>
-        <div class="fg"><label>Número de meses</label><input type="number" id="edit-msi-meses" min="1" max="48"></div>
+        <div class="fg"><label>Monto ($)</label><input type="number" id="edit-msi-monto" min="0" step="0.01"></div>
+        <div class="fg"><label>Meses</label><input type="number" id="edit-msi-meses" min="1" max="48"></div>
       </div>
-      <div class="fg"><label>Fecha de inicio</label><input type="date" id="edit-msi-fecha"></div>
+      <div class="fg"><label>Fecha inicio</label><input type="date" id="edit-msi-fecha"></div>
       <div class="fr">
-        <button class="btn btn-primary" onclick="guardarMSI()">💾 Guardar</button>
-        <button class="btn btn-danger" onclick="eliminarMSIDesdeModal()">🗑 Eliminar</button>
-        <button class="btn" onclick="cerrarModalMSI()">Cancelar</button>
+        <button id="btn-guardar-msi" class="btn btn-primary">💾 Guardar</button>
+        <button id="btn-eliminar-msi" class="btn btn-danger">🗑 Eliminar</button>
+        <button id="btn-cancelar-msi" class="btn">Cancelar</button>
       </div>
     </div>
   </div>
 </div>
 
 <script src="js/main.js" type="module"></script>
-
-<script>
-  if ("serviceWorker" in navigator)
-    navigator.serviceWorker.register("./sw.js");
-</script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>
 </body>
 </html>
