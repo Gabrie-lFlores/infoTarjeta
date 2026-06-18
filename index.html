@@ -18,9 +18,9 @@
 <!-- ══ ASIDE ══ -->
 <aside id="aside" class="aside">
   <div class="aside-header">
-    <div class="aside-logo">💳</div>
+    <div class="aside-logo"> </div>
     <div class="aside-header-text">
-      <div class="aside-app-name">SaldoTarjeta</div>
+      <div class="aside-app-name">Medios de Pago</div>
       <div class="aside-app-sub">Control financiero</div>
     </div>
   </div>
@@ -41,13 +41,25 @@
   <!-- Tarjetas de crédito -->
   <div class="aside-section">
     <div class="aside-section-title">Tarjetas de crédito</div>
-    <div id="aside-tarjetas-zona"></div>
+     <!-- Se crean dinámicamente tarjetas de crédito-->
+    <div id="aside-tarjetas-zona">
+      
+    </div>
   </div>
 
   <!-- Pago en efectivo -->
   <div class="aside-section">
     <div class="aside-section-title">Pago en efectivo</div>
+     <!-- Se crean dinamicame monederos--> 
     <div id="aside-monederos-zona"></div>
+  </div>
+
+   <!-- Presupuesto -->
+  <div class="aside-section">
+    <button class="aside-presupuesto-btn" data-vista="presupuesto">
+      📋 Elaboración de presupuesto
+    </button>
+    <div id="aside-presupuesto-resumen"></div>
   </div>
 
   <!-- Estadísticos globales -->
@@ -55,23 +67,16 @@
     <div class="aside-section-title">Estadísticos</div>
     <button class="aside-item" data-vista="reporte">📊 Todos los medios de pago</button>
   </div>
-
-  <!-- Presupuesto (botón integrado) -->
-  <div class="aside-section aside-section--presupuesto">
-    <button class="aside-presupuesto-btn" data-vista="presupuesto">
-      📋 Elaboración de presupuesto
-    </button>
-    <div id="aside-presupuesto-resumen"></div>
-  </div>
+ 
 
   <!-- Respaldo -->
   <div class="aside-section aside-section--bottom">
     <div class="aside-section-title">Configuración</div>
-    <button class="aside-item" data-vista="respaldo">📁 Respaldo y diagnóstico</button>
+    <button class="aside-item" data-vista="respaldo">📁 Respaldo de información</button>
   </div>
 </aside>
 
-<!-- ══ MAIN CONTENT ══ -->
+<!-- ══________________________ MAIN CONTENT _______________________══ -->
 <div class="main-content">
 
   <!-- Header (solo móvil) -->
@@ -81,7 +86,7 @@
     <button id="btn-salir" class="btn-icon btn-icon--right" aria-label="Salir">✕</button>
   </header>
 
-  <!-- ══ VISTA: Estado de cuenta ══ -->
+  <!-- ══ VISTA: Estado de cuenta para tarjeta de credito══ -->
   <div class="vista vista--active" id="vista-estado-cuenta">
     <div class="vista-content">
       <div class="ec-header">
@@ -461,11 +466,11 @@
       <div class="vista-titulo">📁 Respaldo y diagnóstico</div>
       <div class="card"><div class="card-title">📤 Exportar datos</div>
         <p class="card-desc">Descarga un archivo JSON con todos tus datos.</p>
-        <button id="btn-exportar" class="btn btn--full">⬇️ Exportar JSON</button></div>
+        <button id="btn-exportar" class="btn btn--full">⬇️ Guardar datos JSON</button></div>
       <div class="card"><div class="card-title">📥 Importar datos</div>
         <p class="card-desc">Carga un JSON previamente exportado.</p>
-        <button id="btn-importar" class="btn btn-primary btn--full">⬆️ Importar JSON</button></div>
-      <div class="card"><div class="card-title">🔍 Diagnóstico IndexedDB</div>
+        <button id="btn-importar" class="btn btn-primary btn--full">⬆️ Instalar datos</button></div>
+      <div class="card"><div class="card-title">🔍 Información almacenada</div>
         <button id="btn-diagnostico" class="btn btn--full">📊 Ver datos guardados</button>
         <div id="diag-output" class="diag-box hidden diag-box--mt"></div></div>
       <div class="card card--danger"><div class="card-title card-title--danger">🗑 Zona de peligro</div>

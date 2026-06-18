@@ -21,19 +21,36 @@ import {
   abrirModalMSI, cerrarModalMSI, guardarMSI, eliminarMSIDesdeModal
 } from './modales.js';
 
-// ── Delegación en el aside ──
+
+//  Utiliza una técnica llamada delegación de eventos, 
+// lo que significa que en lugar de poner un "escuchador de clics" en cada botón, 
+// pone uno solo en el contenedor principal para gestionar todo de forma más rápida y ordenada.
 function initAside() {
   const aside = document.getElementById('aside');
   aside?.addEventListener('click', async e => {
+     
+    // Toggle Medios de pago
+    const togMp = e.target.closest('.aside-section');
+    if(togMp){ 
+     document.getElementById('submenu-agregar').classList.toggle("hidden");
+    }
 
     // Toggle submenú de tarjeta
     const togTc = e.target.closest('[data-action="toggle-submenu-tc"]');
-    if(togTc){ await seleccionarTarjeta(togTc.dataset.id); toggleSubmenu('tc-'+togTc.dataset.id); return; }
+    if(togTc){ 
+      await seleccionarTarjeta(togTc.dataset.id); 
+      toggleSubmenu('tc-'+togTc.dataset.id); 
+      return; 
+    }
 
     // Toggle submenú de monedero
     const togMon = e.target.closest('[data-action="toggle-submenu-mon"]');
     if(togMon){ await seleccionarMonedero(togMon.dataset.id); toggleSubmenu('mon-'+togMon.dataset.id); return; }
 
+    //Toggle presupuesto
+    const togPres = e.target.closest('[data-vista="presupuesto"]');
+    if(togPres){ mostrarVista('presupuesto'); return; }
+    
     // Seleccionar tarjeta y mostrar vista
     const tcVista = e.target.closest('[data-action="sel-tc-vista"]');
     if(tcVista){ await seleccionarTarjeta(tcVista.dataset.tc); mostrarVista(tcVista.dataset.vista); return; }

@@ -28,6 +28,7 @@ export function mostrarVista(id) {
 }
 
 // ── Submenú en aside ──
+//Cada vez que se abre un submenu del aside, se cierra cualquier otro que este abierto.
 export function toggleSubmenu(id) {
   const sub = document.getElementById('submenu-' + id);
   if (!sub) return;

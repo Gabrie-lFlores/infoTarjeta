@@ -1,4 +1,4 @@
-const CACHE = 'saldotarjeta-v7';
+const CACHE = 'saldotarjeta-v11';
 const ARCHIVOS = [
   './index.html','./style.css','./manifest.json',
   './js/main.js','./js/state.js','./js/calculos.js',

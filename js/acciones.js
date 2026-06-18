@@ -6,43 +6,70 @@ import { checkRecurrentes, checkMSI } from './automaticos.js';
 import { mostrarVista } from './navegacion.js';
 import { verificarExceso, mostrarNotificacionExceso, guardarPresupuesto } from './presupuesto.js';
 
-function val(id)  { const e=document.getElementById(id); return e?e.value:''; }
+//regresa el valor del input con el id dado. Si no existe, regresa cadena vacía.
+function val(id)  { 
+  const e=document.getElementById(id); 
+  return e?e.value:''; 
+}
 function valF(id) { return parseFloat(val(id)); }
 function valI(id) { return parseInt(val(id)); }
 function limpiar(id){ const e=document.getElementById(id); if(e) e.value=''; }
 
-export async function seleccionarTarjeta(id) { state.tarjetaActivaId=id; await saveState(); render(); }
-export async function seleccionarMonedero(id) { state.monederoActivoId=id; await saveState(); render(); }
+export async function seleccionarTarjeta(id) { 
+  state.tarjetaActivaId=id; 
+  await saveState(); 
+  render(); 
+}
+export async function seleccionarMonedero(id) { 
+  state.monederoActivoId=id; 
+  await saveState(); 
+  render(); 
+}
 
 export async function nuevaTarjetaAccion() {
   const nombre=prompt('Nombre de la nueva tarjeta:');
   if(!nombre?.trim()) return;
   const tc=nuevaTarjeta(nombre.trim());
-  state.tarjetas.push(tc); state.tarjetaActivaId=tc.id;
-  await saveState(); render(); mostrarVista('config-tc');
+  state.tarjetas.push(tc); 
+  state.tarjetaActivaId=tc.id;
+  await saveState(); 
+  render(); 
+  mostrarVista('config-tc');
   toast('✅ Tarjeta creada — configura sus datos');
 }
 export async function nuevoMonederoAccion() {
   const nombre=prompt('Nombre del monedero:');
   if(!nombre?.trim()) return;
   const mon=nuevoMonedero(nombre.trim());
-  state.monederos.push(mon); state.monederoActivoId=mon.id;
-  await saveState(); render(); mostrarVista('config-mon');
+  state.monederos.push(mon); 
+  state.monederoActivoId=mon.id;
+  await saveState(); 
+  render(); 
+  mostrarVista('config-mon');
   toast('✅ Monedero creado');
 }
 
 export async function agregarGasto() {
   const tc=tarjetaActiva();
+  //Se registran los gastos que el usuario ingresa en los inputs correspondientes.
   const c=val('inp-concepto').trim();
   const q=valF('inp-cantidad');
   const cat=val('inp-categoria')||'Otro';
   const tipoG=val('inp-tipo-gasto')||'esencial';
-  if(!c){toast('Ingresa el concepto del gasto','warn');return;}
-  if(isNaN(q)||q<=0){toast('Ingresa una cantidad válida','warn');return;}
+  if(!c){
+    toast('Ingresa el concepto del gasto','warn');
+    return;}
+  if(isNaN(q)||q<=0){
+    toast('Ingresa una cantidad válida','warn');
+    return;}
   const exceso=verificarExceso(cat,q);
   tc.transacciones.push({tipo:'gasto',concepto:c,cantidad:q,fecha:fechaHoy(),categoria:cat,tipoGasto:tipoG});
-  limpiar('inp-concepto'); limpiar('inp-cantidad');
-  await saveState(); render(); toast('✅ Gasto registrado');
+  limpiar('inp-concepto'); 
+  limpiar('inp-cantidad');
+  // se actualiza el estado y la vista.
+  await saveState(); 
+  render();
+  toast('✅ Gasto registrado');
   mostrarVista('estado-cuenta');
   if(exceso) mostrarNotificacionExceso(exceso);
 }
@@ -166,16 +193,21 @@ export async function accionGuardarPresupuesto() {
   await guardarPresupuesto(); await saveState(); render(); toast('✅ Presupuesto guardado');
 }
 
+//Desde el navegador al pc o movil personal
 export function exportarJSON() {
   const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url; a.download=`saldo_${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); URL.revokeObjectURL(url);
+  a.href=url; 
+  a.download=`saldo_${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); 
+  URL.revokeObjectURL(url);
 }
+//Desde el pc o movil personal al navegador.
 export function importarJSON() {
   const input=document.createElement('input');
-  input.type='file'; input.accept='.json';
+  input.type='file'; 
+  input.accept='.json';
   input.onchange=async e=>{
     const file=e.target.files[0]; if(!file) return;
     try{
@@ -187,7 +219,7 @@ export function importarJSON() {
   };
   input.click();
 }
-
+// Muestra datos almacenados en IndexedDB para diagnóstico
 export async function mostrarDiagnostico() {
   const box=document.getElementById('diag-output');
   if(!box) return;
